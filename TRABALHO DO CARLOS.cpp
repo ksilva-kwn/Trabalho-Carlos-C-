@@ -7,7 +7,7 @@ using namespace std;
 
 struct Associado {
     int codigo;
-    string data_associacao, tipo_socio, cpf, nome;
+    string tipo_socio, cpf, nome, dia_associacao, mes_associacao, ano_associacao,;
     float mensalidade;
     vector<int> dependentes;
 };
@@ -22,6 +22,7 @@ struct Visitante {
     string nome, cpf, data_nasc, sexo, telefone, email, endereco, data_visita_inicial, data_visita_final;
 };
 
+
 vector<Associado> associados;
 vector<Dependente> dependentes;
 vector<Visitante> visitantes;
@@ -30,6 +31,9 @@ Associado cadastroassociado;
 Dependente cadastrodependente;
 Visitante cadastrovisitante;
 
+void carregarDadosDoArquivo();
+void salvarDadosDependentesEmArquivo();
+void salvarDadosAssociadosEmArquivo();
 
 void cadastrarAssociado() {
 	
@@ -43,7 +47,15 @@ void cadastrarAssociado() {
 	cout << endl;
 	
 	cout << "Insire a data de Associação: ";
-	getline(cin, cadastroassociado.data_associacao);
+	cout << endl;
+	cout << "Dia: ";
+	getline(cin, cadastroassociado.dia_associacao);
+	cout << endl;
+	cout << "Mes: ";
+	getline(cin, cadastroassociado.mes_associacao);
+	cout << endl;
+	cout << "Ano: ";
+	getline(cin, cadastroassociado.ano_associacao);
 	
 	cout << endl;
 	
@@ -54,6 +66,11 @@ void cadastrarAssociado() {
 	
 	cadastroassociado.codigo = cadastroassociado.codigo + 1;
 	cout << "O codigo do Associado é: " << cadastroassociado.codigo;
+	
+	cout << endl;
+	
+	associados.push_back(cadastroassociado);
+	salvarDadosAssociadosEmArquivo();
 }
 
 void cadastrarDependente() {
@@ -79,6 +96,9 @@ void cadastrarDependente() {
     cadastrodependente.codigo = cadastrodependente.codigo + 1;
     cout << "O codigo do Dependente é: " << cadastrodependente.codigo;
     
+    dependentes.push_back(cadastrodependente);
+    
+    salvarDadosDependentesEmArquivo();
 }
 
 // 3- Cadastrar visitante.
@@ -152,12 +172,51 @@ void relatorioVisitasPorAssociado() {
     // Implemente a lógica de relatório de visitas por associado
 }
 
-void salvarDadosEmArquivo() {
-    // Implemente a lógica para salvar os dados em um arquivo
+void salvarDadosAssociadosEmArquivo(){
+	 ofstream arquivoA("dadosAssociados.txt", ios::app); // Abre o arquivo em modo de anexação
+    if (arquivoA.is_open()) {
+        for (size_t i = 0; i < associados.size(); ++i) {
+            const Associado& associado = associados[i];
+            arquivoA << associado.codigo << " " << associado.dia_associacao << " " << associado.mes_associacao << " " << associado.ano_associacao << " " << associado.tipo_socio << " " << associado.cpf << " " << associado.nome << " " << associado.mensalidade << "\n";
+        }
+        arquivoA.close();
+    } else {
+        cout << "Erro ao abrir o arquivo de associados." << endl;
+    }
+}
+
+void salvarDadosDependentesEmArquivo(){
+	ofstream arquivoD("dadosDependentes.txt", ios::app);
+    if (arquivoD.is_open()) {
+        for (size_t i = 0; i < dependentes.size(); ++i) {
+            const Dependente& dependente = dependentes[i];
+            arquivoD << dependente.codigo << " " << dependente.codExterno << " " << dependente.cpf_associado << " " << dependente.nome << " " << dependente.data_nasc << " " << dependente.sexo << "\n";
+        }
+        arquivoD.close();
+    } else {
+        cout << "Erro ao abrir o arquivo de dependentes." << endl;
+    }
+}
+
+void salvarDadosVisitantesEmArquivo(){
+	ofstream arquivoV("dadosVisitante.txt", ios::app);
+    if (arquivoV.is_open()) {
+        for (size_t i = 0; i < visitantes.size(); ++i) {
+            const Visitante& visitante = visitantes[i];
+            arquivoV << visitante.codigo << " " << visitante.codigo_associado << " " << visitante.nome << " " << visitante.cpf << " " << visitante.data_nasc << " " << visitante.sexo << " "
+                     << visitante.telefone << " " << visitante.email << " " << visitante.endereco << " " << visitante.data_visita_inicial << " " << visitante.data_visita_final << "\n";
+        }
+        arquivoV.close();
+    } else {
+        cout << "Erro ao abrir o arquivo de visitantes." << endl;
+    }
 }
 
 void carregarDadosDoArquivo() {
-    // Implemente a lógica para carregar os dados de um arquivo
+    fstream arquivoA,arquivoD,arquivoV;
+    arquivoA.open("dadosAssociados.txt", fstream::in|fstream::out|fstream::app);
+    arquivoD.open("dadosDependentes.txt", fstream::in|fstream::out|fstream::app);
+    arquivoV.open("dadosVisitante.txt", fstream::in|fstream::out|fstream::app);
 }
 
 int main() {
@@ -201,8 +260,6 @@ int main() {
                 relatorioVisitasPorAssociado();
                 break;
             case 8:
-                salvarDadosEmArquivo();
-                cout << "Programa encerrado.\n";
                 break;
             default:
                 cout << "Opção inválida. Tente novamente.\n";
