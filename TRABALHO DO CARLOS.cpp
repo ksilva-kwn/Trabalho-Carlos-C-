@@ -22,11 +22,6 @@ struct Visitante {
     string nome, cpf, data_nasc, sexo, telefone, email, endereco, data_visita_inicial, data_visita_final;
 };
 
-
-vector<Associado> associados;
-vector<Dependente> dependentes;
-vector<Visitante> visitantes;
-
 Associado cadastroassociado;
 Dependente cadastrodependente;
 Visitante cadastrovisitante;
