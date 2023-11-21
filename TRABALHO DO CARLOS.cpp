@@ -237,9 +237,16 @@ void cadastrarVisitante() {
 	cadastrarVisitanteStruct.codigo = linhas+1;
 	cout << "O código do visitante é: " << cadastrarVisitanteStruct.codigo;
 	
+	
+	visitantes.push_back(cadastrarVisitanteStruct);
+	salvarDadosVisitantesEmArquivo();
 }
 
 void avisoMaioridade() {
+    
+}
+
+void registrarVisita() {
     
 }
 
