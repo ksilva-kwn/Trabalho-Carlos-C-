@@ -791,6 +791,4 @@ void carregarDadosDoArquivo(){
     arquivoA.open("dadosAssociados.txt", ios::in | ios::out | ios::app);
     arquivoD.open("dadosDependentes.txt", ios::in | ios::out | ios::app);
     arquivoV.open("dadosVisitante.txt", ios::in | ios::out | ios::app);
-    
-	}
-	
+    }
