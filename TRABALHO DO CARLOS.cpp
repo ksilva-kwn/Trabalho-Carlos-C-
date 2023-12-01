@@ -1,9 +1,16 @@
+//Alunos: Bruno Rezende, Guilherme Pereira , Kawan Aureliano. 
+//2ª Periodo - Sistema de Informação - UEMG PASSOS.
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <stdio.h>
 #include <locale.h>
-
+#include <sstream>
+#include <ctime>
+#include <cstdlib>
+#include <iomanip>
+#include <algorithm>
 using namespace std;
 
 struct Associado{
@@ -11,28 +18,27 @@ struct Associado{
     int codigo, qntdDependentes;
     string nome, cpf, dia_associacao, mes_associacao, ano_associacao, tipo_socio, data_nasc;
     float mensalidade;
-    vector<int> dependentes;
 };
 
 struct Dependente{
 	
-    int codigo, codExterno;
-    string cpf_associado, nome, data_nasc, sexo;
+    int codigo,dia,mes,ano;
+    string cpf_associado, nome, sexo,codExterno;
 };
 
 struct Visitante{
 	
-    int codigo, cpf, codigo_associado;
+    int codigo, cpf, codigo_associado,codAssociadoVisitante,;
     string nome, data_nasc, sexo, data_visita_inicial, data_visita_final;
 };
 
-int contadorDeLinhas(const string &nomeArquivo);
+int contadorDeLinhas(const char *nomeArquivo);
 void cadastrarAssociado();
 void cadastrarDependente();
 void cadastrarVisitante();
-void avisoMaioridade();
-void relatorioDependentesAssociados();
-void relatorioVisitasPorAssociado();
+void relatorioDependentes();
+void relatorioAssociados();
+void relatorioVisitas();
 void salvarDadosAssociadosEmArquivo();
 void salvarDadosDependentesEmArquivo();
 void salvarDadosVisitantesEmArquivo();
@@ -41,6 +47,8 @@ void alterarDados();
 int alterarDadosAssociados(const char *nomeArquivo);
 int alterarDadosDependentes(const char *nomeArquivo);
 int alterarDadosVisitantes(const char *nomeArquivo);
+void verificarMaioridadeDependentes(int d, int m, int a);
+int calcularIdade(const string& data_nasc);
 
 vector<Associado> associados;
 vector<Dependente> dependentes;
@@ -63,12 +71,13 @@ int main(){
         cout << "1. Cadastrar associado\n";
         cout << "2. Cadastrar dependente\n";
         cout << "3. Cadastrar visitante\n";
-        cout << "4. Aviso automÃ¡tico de maioridade\n";
-        cout << "5. RelatÃ³rio de dependentes/associados\n";
-        cout << "6. RelatÃ³rio de visitas por associado\n";
-        cout << "7. Alterar Dados\n";
-        cout << "8. Encerrar o Programa\n";
-        cout << "Escolha uma opÃ§Ã£o (1-8): ";
+        cout << "4. Aviso automatico de maioridade\n";
+        cout << "5. Relatorio de dependentes\n";
+        cout << "6. Relatorio de visitas\n";
+        cout << "7. Relatorio de associados\n";
+        cout << "8. Alterar Dados\n";
+        cout << "0. Encerrar o programa\n";
+        cout << "Escolha uma opcao (0-8): ";
         cin >> escolha;
         cout << endl;
 
@@ -84,25 +93,34 @@ int main(){
             cadastrarVisitante();
             break;
         case '4':
-            avisoMaioridade();
+        	int d,m,a;
+			cout << "Verificador de Maioridade\n";
+            cout << "Digite a data atual DD/MM/AAAA\n";
+            cin >> d >> m >> a;
+            verificarMaioridadeDependentes(d,m,a);
+            remove("caddep.txt");
+            rename("cadtemp.txt", "caddep.txt");
             break;
         case '5':
-            relatorioDependentesAssociados();
+            relatorioDependentes();
             break;
         case '6':
-            relatorioVisitasPorAssociado();
+            relatorioVisitas();
             break;
         case '7':
-            alterarDados();
+            relatorioAssociados();
             break;
         case '8':
-            cout << "Programa encerrado.\n";
+            alterarDados();
             break;
+        case '0':
+        	cout <<"Programa Encerrado.\n";
+        	break;
         default:
-            cout << "OpÃ§Ã£o invÃ¡lida. Tente novamente.\n";
+            cout << "Opcao Ivalida. Tente novamente.\n";
             break;
         }
-    } while (escolha != '8');
+    } while (escolha != '0');
 
     return 0;
 }
@@ -142,7 +160,7 @@ void cadastrarAssociado(){
     const char *nomeArquivo = "dadosAssociados.txt";
     int linhas = contadorDeLinhas(nomeArquivo);
 
-    cout << "Digite o nome do associado (Utilize ' _ 'como espaï¿½o): ";
+    cout << "Digite o nome do associado (Utilize ' _ 'como espaco): ";
     cin >> cadastrarAssociadoStruct.nome;
 
     cout << "Digite o CPF: ";
@@ -150,7 +168,7 @@ void cadastrarAssociado(){
 
     cout << endl;
 
-    cout << "Insire a data de AssociaÃ§Ã£o: ";
+    cout << "Insire a data de Associacao: ";
     cout << endl;
 
     cout << "Dia: ";
@@ -164,18 +182,18 @@ void cadastrarAssociado(){
 
     cout << endl;
 
-    cout << "Insira o tipo de sÃ³cio (ProprietÃ¡rio ou Contribuinte): ";
+    cout << "Insira o tipo de socio (Proprietario ou Contribuinte): ";
     cin >> cadastrarAssociadoStruct.tipo_socio;
 
     cout << endl;
 
     cadastrarAssociadoStruct.codigo = linhas + 1;
-    cout << "O codigo do Associado Ã©: " << cadastrarAssociadoStruct.codigo;
+    cout << "O codigo do Associado é: " << cadastrarAssociadoStruct.codigo;
 
     cout << endl;
     cout << endl;
 
-    cout << "Digite quantos dependentes vocÃª quer cadastrar: ";
+    cout << "Digite quantos dependentes voce quer cadastrar: ";
     cin >> cadastrarAssociadoStruct.qntdDependentes;
     cout << endl;
 
@@ -205,21 +223,33 @@ void cadastrarDependente(){
 	
     const char *nomeArquivo = "dadosDependentes.txt";
     int linhas = contadorDeLinhas(nomeArquivo);
+    string anoAssociacao;
 
-    cout << "Insira o nome do dependente(Utilize ' _ ' como espaÃ§o): ";
+    cout << "Insira o nome do dependente(Utilize ' _ ' como espaco): ";
     cin >> cadastrarDependenteStruct.nome;
     
     cout<<endl;
     
     cout << "Digite o CPF do Associado: ";
 	cin >> cadastrarDependenteStruct.cpf_associado;
-
+	
+	cout<<"Digite o ano de associação: ";
+	cin>>anoAssociacao;
+	
     cout << endl;
 
-    cout << "Insira a data de nascimento (Utilize / ou - e 0): ";
-    cin >> cadastrarDependenteStruct.data_nasc;
+    cout << "Insira o dia do seu nascimento: ";
+    cin >> cadastrarDependenteStruct.dia;
 
     cout << endl;
+    
+    cout << "Insira o mes do seu nascimento: ";
+    cin >> cadastrarDependenteStruct.mes;
+    
+    cout<<endl;
+    
+    cout << "Insira o ano do seu nascimento: ";
+    cin >> cadastrarDependenteStruct.ano;
 
     cout << "Insira o sexo (Masculino  ou Feminino): ";
     cin >> cadastrarDependenteStruct.sexo;
@@ -227,7 +257,11 @@ void cadastrarDependente(){
     cout << endl;
 
     cadastrarDependenteStruct.codigo = linhas + 1;
+    cadastrarDependenteStruct.codExterno = anoAssociacao + static_cast<ostringstream*>(& (ostringstream() << cadastrarDependenteStruct.codigo))->str();
     cout << "O codigo do Dependente é: " << cadastrarDependenteStruct.codigo << endl;
+    cout<< "seu codigo externo é:" << cadastrarDependenteStruct.codExterno<<endl;
+
+    
 
     dependentes.push_back(cadastrarDependenteStruct);
     salvarDadosDependentesEmArquivo();
@@ -239,13 +273,11 @@ void cadastrarVisitante(){
 	
 	const char *nomeArquivo = "dadosVisitante.txt";
     int linhas = contadorDeLinhas(nomeArquivo);
-
-	int codAssociadoVisitante;
 	
 	cout << "Digite o cod do Associado: ";
-	cin >> codAssociadoVisitante;
+	cin >> cadastrarVisitanteStruct.codAssociadoVisitante;
 		
-    cout << "Insira o nome do Visitante(Utilize ' _ ' como espaÃ§o): ";
+    cout << "Insira o nome do Visitante(Utilize ' _ ' como espaco): ";
     cin >> cadastrarVisitanteStruct.nome;
 
     cout << endl;
@@ -254,6 +286,12 @@ void cadastrarVisitante(){
     cin >> cadastrarVisitanteStruct.data_nasc;
 
     cout << endl;
+    
+    cout << "Insira o cpf do visitante: ";
+    cin >> cadastrarVisitanteStruct.cpf;
+
+    cout << endl;
+  
 
     cout << "Insira o sexo (Masculino  ou Feminino): ";
     cin >> cadastrarVisitanteStruct.sexo;
@@ -271,212 +309,421 @@ void cadastrarVisitante(){
     cout << endl;
 
     cadastrarVisitanteStruct.codigo = linhas + 1;
-    cout << "O codigo do visitante é: " << cadastrarVisitanteStruct.codigo;
+    cout << "O codigo da visita é: " << cadastrarVisitanteStruct.codigo;
 
     visitantes.push_back(cadastrarVisitanteStruct);
     salvarDadosVisitantesEmArquivo();
 }
 
-void avisoMaioridade(){
-	
-	
-}
-
-void relatorioDependentesAssociados(){
-	
-}
-
-void relatorioVisitasPorAssociado(){
-	
-}
-
-void alterarDados(){
-	
-
+void alterarDados() {
     char op;
 
-    cout << "Alterar dados de Associados,Dependentes ou dos Visitantes? (A/D/V): ";
+    cout << "Alterar dados de Associados, Dependentes ou dos Visitantes? (A/D/V): ";
     cin >> op;
 
-    switch (op)
-    {
-    case 'A':
-        alterarDadosAssociados("dadosAssociados.txt");
-        break;
-    case 'D':
-        alterarDadosDependentes("dadosDependentes.txt");
-        break;
-    case 'V':
-        alterarDadosVisitantes("dadosVisitantes.txt");
-        break;
-    case 'a':
-        alterarDadosAssociados("dadosAssociados.txt");
-        break;
-    case 'd':
-        alterarDadosDependentes("dadosDependentes.txt");
-        break;
-    case 'v':
-        alterarDadosVisitantes("dadosVisitantes.txt");
-        ;
-        break;
-    default:
-        cout << "Opcao Invalida";
+    const char *nomeArquivo;
+
+    switch (op) {
+        case 'A':
+        case 'a':
+            nomeArquivo = "dadosAssociados.txt";
+            alterarDadosAssociados(nomeArquivo);
+            break;
+        case 'D':
+        case 'd':
+            nomeArquivo = "dadosDependentes.txt";
+            alterarDadosDependentes(nomeArquivo);
+            break;
+        case 'V':
+        case 'v':
+            nomeArquivo = "dadosVisitante.txt";
+            alterarDadosVisitantes(nomeArquivo);
+            break;
+        default:
+            cout << "Opcao Invalida";
     }
 }
 
-int alterarDadosAssociados(const char *nomeArquivo){
-	
+
+int alterarDadosAssociados(const char *nomeArquivo) {
     int codigoAssociado;
-
-    cout << "Digite o codigo do associado que deseja alterar: ";
+    cout << "Digite o código do associado que deseja alterar: ";
     cin >> codigoAssociado;
-    cin.ignore();
 
-    // Procura o associado pelo cï¿½digo
-    for (size_t i = 0; i < associados.size(); ++i)
-    {
-        if (associados[i].codigo == codigoAssociado)
-        {
-            // Mostra os dados atuais do associado
-            cout << "\nDados atuais do associado:\n";
-            cout << "Cï¿½digo: " << associados[i].codigo << "\n";
-            cout << "Nome: " << associados[i].nome << "\n";
-            cout << "CPF: " << associados[i].cpf << "\n";
-            cout << "Tipo: " << associados[i].tipo_socio << "\n";
-            cout << "Data AssociaÃ§Ã£o: " << associados[i].dia_associacao << "/" << associados[i].mes_associacao << "/" << associados[i].ano_associacao << "\n";
-            cout << "Quantidade Dependentes: " << associados[i].qntdDependentes << "\n";
+    fstream arquivo(nomeArquivo, ios::in | ios::out);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao abrir o arquivo de associados.\n";
+        return 0;
+    }
 
-            cout << "\nDigite as novas informaÃ§Ãµes (ou digite novamente as informaÃ§Ã£o que quer manter):\n";
-            cout << "Novo nome: ";
-            cin.ignore();
-            getline(cin, associados[i].nome);
-            cout << endl;
-            cout << "Digite novo CPF: ";
-            getline(cin, associados[i].cpf);
-            cout << endl;
-            cout << "Digite novo Tipo de AssociaÃ§Ã£o: ";
-            getline(cin, associados[i].tipo_socio);
-            cout << endl;
-            cout << "Digite nova data de associaÃ§Ã£o: " << endl;
-            cout << "dia:";
-            getline(cin, associados[i].dia_associacao);
-            cout << endl;
-            cout << "mes:";
-            getline(cin, associados[i].mes_associacao);
-            cout << endl;
-            cout << "ano:";
-            getline(cin, associados[i].ano_associacao);
-            cout << endl;
-            cout << "Quantidade de Dependentes:";
-            cin >> associados[i].qntdDependentes;
-            associados[i].mensalidade = 200 + (30 * associados[i].qntdDependentes);
+    string linha;
+    vector<string> linhasDoArquivo;
 
-            salvarDadosAssociadosEmArquivo();
-            return 0;
+    // Lê todas as linhas do arquivo
+    while (getline(arquivo, linha)) {
+        linhasDoArquivo.push_back(linha);
+    }
+
+    arquivo.close();
+
+    // Encontrar a posição da linha desejada
+    size_t posicaoLinha = string::npos;
+    for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+        size_t pos = linhasDoArquivo[i].find("codigo:" + static_cast<ostringstream*>( &(ostringstream() << codigoAssociado) )->str());
+        if (pos != string::npos) {
+            posicaoLinha = i;
+            break;
         }
     }
 
-    cout << "Associado nÃ£o encontrado com o cÃ³digo fornecido.\n";
-    return -1; // Retorna -1 para indicar falha
+    if (posicaoLinha == string::npos) {
+        cout << "Associado não encontrado.\n";
+        return 0;
+    }
+    
+    cout << "\nDados atuais do associado:\n" << linhasDoArquivo[posicaoLinha] << "\n";
+
+
+    // Pede ao usuário para digitar os novos dados
+    Associado novoAssociado;
+    cout << "\nDigite os novos dados do associado( ou reescreva os mesmos dados ):\n";
+    cout << "Nome: ";
+    cin >> novoAssociado.nome;
+    cout << "CPF: ";
+    cin >> novoAssociado.cpf;
+    cout << "Dia de Associação: ";
+    cin >> novoAssociado.dia_associacao;
+    cout << "Mês de Associação: ";
+    cin >> novoAssociado.mes_associacao;
+    cout << "Ano de Associação: ";
+    cin >> novoAssociado.ano_associacao;
+    cout << "Tipo de Sócio: ";
+    cin >> novoAssociado.tipo_socio;
+    cout << "Quantidade de Dependentes: ";
+    cin >> novoAssociado.qntdDependentes;
+
+    // Calcula a nova mensalidade
+    novoAssociado.mensalidade = 200 + (30 * novoAssociado.qntdDependentes);
+
+    // Atualiza a linha no vetor de linhas
+    ostringstream oss;
+    oss << "codigo:" << codigoAssociado << " "
+        << "tipo:" << novoAssociado.tipo_socio << " "
+        << "cpf:" << novoAssociado.cpf << " "
+        << "diaA:" << novoAssociado.dia_associacao << " "
+        << "mesA:" << novoAssociado.mes_associacao << " "
+        << "anoA:" << novoAssociado.ano_associacao << " "
+        << "qtda dependentes:" << novoAssociado.qntdDependentes << " "
+        << "mensalidade:" << novoAssociado.mensalidade << " "
+        << "nome:" << novoAssociado.nome;
+
+    linhasDoArquivo[posicaoLinha] = oss.str();
+
+    // Reescreve todo o conteúdo atualizado no arquivo
+    arquivo.open(nomeArquivo, ios::out | ios::trunc);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao abrir o arquivo de associados para escrita.\n";
+        return 0;
+    }
+
+    for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+        arquivo << linhasDoArquivo[i] << '\n';
+    }
+
+    cout << "Dados do associado atualizados com sucesso.\n";
+
+    arquivo.close();
+
+    return 0;
 }
 
-int alterarDadosDependentes(const char *nomeArquivo){
-	
-    int codigoDependente;
 
+int alterarDadosDependentes(const char *nomeArquivo) {
+    int codigoDependente;
     cout << "Digite o código do dependente que deseja alterar: ";
     cin >> codigoDependente;
 
-    // Procura o dependente pelo código
-    for (size_t i = 0; i < dependentes.size(); ++i)
-    {
-        if (dependentes[i].codigo == codigoDependente)
-        {
-            // Mostra os dados atuais do dependente
-            cout << "\nDados atuais do dependente:\n";
-            cout << "Código: " << dependentes[i].codigo << "\n";
-            cout << "Nome: " << dependentes[i].nome << "\n";
-            cout<< "CPF: "<<dependentes[i].cpf_associado<< "\n";
-            cout << "Data de Nascimento: " << dependentes[i].data_nasc << "\n";
-            cout << "Sexo: " << dependentes[i].sexo << "\n";
+    fstream arquivo(nomeArquivo, ios::in | ios::out);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao abrir o arquivo de dependentes.\n";
+        return 0;
+    }
 
-            cout << "\nDigite as novas informações (ou digite novamente as informações que quer manter):\n";
-            cout << "Novo nome: ";
-            cin.ignore();
-            getline(cin, dependentes[i].nome);
-            cout << endl;
-            cout << "Digite novo CPF Associado: ";
-            cin.ignore();
-            getline(cin, dependentes[i].cpf_associado);
-            cout << endl;
-            cout << "Digite nova Data de Nascimento: ";
-            getline(cin, dependentes[i].data_nasc);
-            cout << endl;
-            cout << "Digite novo Sexo: ";
-            getline(cin, dependentes[i].sexo);
-            cout << endl;
+    string linha;
+    vector<string> linhasDoArquivo;
 
-            salvarDadosDependentesEmArquivo();
-            return 0;
+    // Lê todas as linhas do arquivo
+    while (getline(arquivo, linha)) {
+	    // Remove espaços extras do final da linha
+	    linhasDoArquivo.push_back(linha);
+}
+
+    arquivo.close();
+
+    // Encontrar a posição da linha desejada
+    size_t posicaoLinha = string::npos;
+    for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+        size_t pos = linhasDoArquivo[i].find("codigo:" + static_cast<ostringstream*>( &(ostringstream() << codigoDependente) )->str());
+        if (pos != string::npos) {
+            posicaoLinha = i;
+            break;
         }
     }
 
-    cout << "Dependente não encontrado com o código fornecido.\n";
-    return -1; // Retorna -1 para indicar falha
+    if (posicaoLinha == string::npos) {
+        cout << "Dependente não encontrado.\n";
+        return 0;
+    }
+
+	size_t posInicioCodExterno = linhasDoArquivo[posicaoLinha].find("codExterno:");
+	size_t posFimCodExterno = linhasDoArquivo[posicaoLinha].find(" ", posInicioCodExterno);
+	string codExternoAtual = linhasDoArquivo[posicaoLinha].substr(posInicioCodExterno + 10, posFimCodExterno - posInicioCodExterno - 10);
+
+	cout << "\nDados atuais do Dependente:\n" << linhasDoArquivo[posicaoLinha] << "\n";
+	
+    // Pede ao usuário para digitar os novos dados
+    Dependente novoDependente;
+    cout << "\nDigite os novos dados do dependente ( ou reescreva os mesmos dados ):\n";
+    cout << "Nome: ";
+    cin >> novoDependente.nome;
+    cout << "CPF do Associado: ";
+    cin >> novoDependente.cpf_associado;
+    cout << "dia do nascimento: ";
+    cin >> novoDependente.dia;
+    cout << "mes do nascimento: ";
+    cin >> novoDependente.mes;
+    cout << "ano do nascimento: ";
+    cin >> novoDependente.ano;
+    cout << "Sexo: ";
+    cin >> novoDependente.sexo;
+
+    // Atualiza a linha no vetor de linhas
+    ostringstream oss;
+	oss << codigoDependente << " "
+	    << "codExterno:" << codExternoAtual << " "
+	    << "cpf associado:" << novoDependente.cpf_associado << " "
+	    << "nome:" << novoDependente.nome << " "
+	    << novoDependente.dia << " "
+ 	    << novoDependente.mes << " "
+	    << novoDependente.ano << " "
+	    << "sexo:" << novoDependente.sexo << " ";
+
+    linhasDoArquivo[posicaoLinha] = oss.str();
+
+    // Reescreve todo o conteúdo atualizado no arquivo
+    arquivo.open(nomeArquivo, ios::out | ios::trunc);
+	if (!arquivo.is_open()) {
+	    cout << "Erro ao abrir o arquivo de dependentes para escrita.\n";
+	    return 0;
+	}
+	
+	for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+	    arquivo << linhasDoArquivo[i] << '\n';
+	}
+	
+	cout << "Dados do dependente atualizados com sucesso.\n";
+	
+	arquivo.close();
+
+    return 0;
 }
 
-int alterarDadosVisitantes(const char *nomeArquivo){
-	
-    int codigoVisitante;
 
+int alterarDadosVisitantes(const char *nomeArquivo) {
+    int codigoVisitante;
     cout << "Digite o código do visitante que deseja alterar: ";
     cin >> codigoVisitante;
-		
-    // Procura o visitante pelo código
-    for (size_t i = 0; i < visitantes.size(); ++i){
-    	
-        if (visitantes[i].codigo == codigoVisitante)
-        {
-            // Mostra os dados atuais do visitante
-            cout << "\nDados atuais do visitante:\n";
-            cout << "Código: " << visitantes[i].codigo << "\n";
-            cout << "Código Associado: " << visitantes[i].codigo_associado << "\n";
-            cout << "Nome: " << visitantes[i].nome << "\n";
-            cout << "Data de Nascimento: " << visitantes[i].data_nasc << "\n";
-            cout << "Sexo: " << visitantes[i].sexo << "\n";
-            cout << "Data de Visita Inicial: " << visitantes[i].data_visita_inicial << "\n";
-            cout << "Data de Visita Final: " << visitantes[i].data_visita_final << "\n";
 
-            cout << "\nDigite as novas informações (ou digite novamente as informações que quer manter):\n";
-            cout << endl;
-            cout << "Digite novo Código Associado: ";
-            cin >> visitantes[i].codigo_associado;
-            cout << endl;
-            cout << "Digite novo Nome: ";
-            cin.ignore();
-            getline(cin, visitantes[i].nome);
-            cout << endl;
-            cout << "Digite nova Data de Nascimento: ";
-            getline(cin, visitantes[i].data_nasc);
-            cout << endl;
-            cout << "Digite novo Sexo: ";
-            getline(cin, visitantes[i].sexo);
-            cout << endl;
-            cout << "Digite nova Data de Visita Inicial: ";
-            getline(cin, visitantes[i].data_visita_inicial);
-            cout << endl;
-            cout << "Digite nova Data de Visita Final: ";
-            getline(cin, visitantes[i].data_visita_final);
-            cout << endl;
+    fstream arquivo(nomeArquivo, ios::in | ios::out);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao abrir o arquivo de visitantes.\n";
+        return 0;
+    }
 
-            salvarDadosVisitantesEmArquivo();
-            return 0;
+    string linha;
+    vector<string> linhasDoArquivo;
+
+    // Lê todas as linhas do arquivo
+    while (getline(arquivo, linha)) {
+        linhasDoArquivo.push_back(linha);
+    }
+
+    arquivo.close();
+
+    // Encontrar a posição da linha desejada
+    size_t posicaoLinha = string::npos;
+    for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+        size_t pos = linhasDoArquivo[i].find("codigo:" + static_cast<ostringstream*>( &(ostringstream() << codigoVisitante) )->str());
+        if (pos != string::npos) {
+            posicaoLinha = i;
+            break;
         }
     }
 
-    cout << "Visitante não encontrado com o código fornecido.\n";
-    return -1; // Retorna -1 para indicar falha
+    if (posicaoLinha == string::npos) {
+        cout << "Visitante não encontrado.\n";
+        return 0;
+    }
+    
+    cout << "\nDados atuais do Visitante:\n" << linhasDoArquivo[posicaoLinha] << "\n";
+
+    // Pede ao usuário para digitar os novos dados
+    Visitante novoVisitante;
+    cout << "\nDigite os novos dados do visitante ( ou reescreva os mesmos dados ):\n";
+    cout << "Nome: ";
+    cin >> novoVisitante.nome;
+    cout << "CPF: ";
+    cin >> novoVisitante.cpf;
+    cout << "Código do Associado: ";
+    cin >> novoVisitante.codigo_associado;
+    cout << "Data de Nascimento: ";
+    cin >> novoVisitante.data_nasc;
+    cout << "Sexo: ";
+    cin >> novoVisitante.sexo;
+    cout << "Data de Visita Inicial: ";
+    cin >> novoVisitante.data_visita_inicial;
+    cout << "Data de Visita Final: ";
+    cin >> novoVisitante.data_visita_final;
+
+    // Atualiza a linha no vetor de linhas
+    ostringstream oss;
+    oss << "codigo:" << codigoVisitante << " "
+        << "cpf:" << novoVisitante.cpf << " "
+        << "codigo associado:" << novoVisitante.codigo_associado << " "
+        << "nome:" << novoVisitante.nome << " "
+        << "data_nasc:" << novoVisitante.data_nasc << " "
+        << "sexo:" << novoVisitante.sexo << " "
+        << "visita inicial:" << novoVisitante.data_visita_inicial << " "
+        << "visita final:" << novoVisitante.data_visita_final;
+
+    linhasDoArquivo[posicaoLinha] = oss.str();
+
+    // Reescreve todo o conteúdo atualizado no arquivo
+    arquivo.open(nomeArquivo, ios::out | ios::trunc);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao abrir o arquivo de visitantes para escrita.\n";
+        return 0;
+    }
+
+    for (size_t i = 0; i < linhasDoArquivo.size(); ++i) {
+        arquivo << linhasDoArquivo[i] << '\n';
+    }
+
+    cout << "Dados do visitante atualizados com sucesso.\n";
+
+    arquivo.close();
+
+    return 0;
 }
+
+void verificarMaioridadeDependentes(int d, int m, int a)
+{
+    ifstream arquivo("dadosDependentes.txt");
+
+    if (!arquivo.is_open())
+    {
+        cout << "Erro ao abrir o arquivo de dependentes.\n";
+        return;
+    }
+
+    int codigo, diaNasc, mesNasc, anoNasc;
+    string linha;
+    bool encontrouMaiorIdade = false;  // Variável para verificar se pelo menos um dependente é maior de idade.
+
+    cout << "Data Atual: " << d << "/" << m << "/" << a << "\n";
+
+    while (getline(arquivo, linha))
+    {
+        istringstream iss(linha);
+
+        string codigoStr, codExternoStr, cpfAssociadoStr, nomeStr, diaNascStr, mesNascStr, anoNascStr, sexoStr;
+        iss >> codigoStr >> codExternoStr >> cpfAssociadoStr >> nomeStr >> diaNascStr >> mesNascStr >> anoNascStr >> sexoStr;
+
+        // Convertendo strings para inteiros
+        istringstream(codigoStr) >> codigo;
+        istringstream(diaNascStr) >> diaNasc;
+		istringstream(mesNascStr) >> mesNasc;
+		istringstream(anoNascStr) >> anoNasc;
+
+        if (iss.fail() || diaNasc < 1 || diaNasc > 31 || mesNasc < 1 || mesNasc > 12 || anoNasc < 0) {
+            // Se houver falha na conversão ou a data for inválida, imprima uma mensagem e vá para a próxima iteração.
+            cerr << "Erro: Dados de dependente inválidos.\n";
+            continue;
+        }
+
+        if (a - anoNasc >= 18 || (a - anoNasc == 18 && m >= mesNasc) || (a - anoNasc == 18 && m == mesNasc && d >= diaNasc))
+        {
+            encontrouMaiorIdade = true;
+            cout << "Código: " << codigo << ", Nome: " << nomeStr << ", Data de Nascimento: " << diaNasc << "/" << mesNasc << "/" << anoNasc << "\n";
+        }
+    }
+
+    arquivo.close();
+
+    if (encontrouMaiorIdade)
+    {
+        cout << "Aviso: esses são os dependentes maiores de idade... Agora não são mais dependentes, corrija o banco de dados.\n";
+    }
+    else
+    {
+        cout << "Todos os dependentes são menores de 18 anos.\n";
+    }
+}
+
+void relatorioAssociados(){
+	ifstream arquivoE;
+	string linha;
+	arquivoE.open("dadosAssociados.txt");
+	if (arquivoE.is_open()){
+	while (getline(arquivoE,linha)){
+		cout<<linha<<endl;	}
+	}else{
+		cout<<"Nao foi encontrado dados para o relatorio"<<endl;
+	}}
+
+void relatorioDependentes(){
+	ifstream arquivoE;
+	string linha;
+	arquivoE.open("dadosDependentes.txt");
+	if (arquivoE.is_open()){
+	while (getline(arquivoE,linha)){
+		cout<<linha<<endl;	}
+	}else{
+		cout<<"Nao foi encontrado dados para o relatorio"<<endl;
+	}
+}
+
+
+void relatorioVisitas() {
+   ifstream arquivoE("dadosVisitante.txt");
+    string linha;
+    
+    if (arquivoE.is_open()) {
+        string associadoAnterior = "";
+        int contador = 0;
+        
+        while (getline(arquivoE, linha)) {
+            if (linha != associadoAnterior) {
+                if (!associadoAnterior.empty()) {
+			cout << "Associado: " << associadoAnterior << ", Visitantes: " << contador << endl;
+                }
+                associadoAnterior = linha;
+                contador = 1;
+            } else {
+                contador++;
+            }
+        }
+        
+        if (!associadoAnterior.empty()) {
+            std::cout << "Associado: " << associadoAnterior << ", Visitantes: " << contador << endl;
+        }
+        
+        arquivoE.close();
+    } else {
+     cout << "Não foram encontrados dados para o relatório." << endl;
+    }
+}
+
 
 void salvarDadosAssociadosEmArquivo(){
 	
@@ -499,21 +746,29 @@ void salvarDadosAssociadosEmArquivo(){
 
 void salvarDadosDependentesEmArquivo(){
 	
-	fstream arquivo("dadosDependentes.txt", ios::out | ios::app );
-
-    if (arquivo.is_open())
-    {
-        for (size_t i = 0; i < dependentes.size(); ++i)
-        {
-            const Dependente &dependente = dependentes[i];
-            arquivo << "codigo:" << dependente.codigo << " "<< "codExterno:" << dependente.codExterno << " "<< "cpf associado:" << dependente.cpf_associado << " "<< "nome:" << dependente.nome << " "<< "data_nasc:" << dependente.data_nasc << " "<< "sexo:" << dependente.sexo << "\n";
-        }
-        arquivo.close();
-    }
-    else
-    {
-        cout << "Erro ao abrir o arquivo de dependentes." << endl;
-    }
+	fstream arquivo("dadosDependentes.txt", ios::out | ios::app);
+	
+	if (arquivo.is_open())
+	{
+	    for (size_t i = 0; i < dependentes.size(); ++i)
+	    {
+	        const Dependente &dependente = dependentes[i];
+	        arquivo << dependente.codigo << " ";
+	        arquivo << "codExterno:" << dependente.codExterno << " ";
+	        arquivo << "cpfAssociado:" << dependente.cpf_associado << " ";
+	        arquivo << "nome:" << dependente.nome << " ";
+	        arquivo << dependente.dia << " ";
+	        arquivo << dependente.mes << " ";
+	        arquivo << dependente.ano << " ";
+	        arquivo << "sexo:" << dependente.sexo << "\n";
+	    }
+	    arquivo.close();
+	    cout << "Dados dos dependentes gravados com sucesso." << endl;
+	}
+	else
+	{
+	    cout << "Erro ao abrir o arquivo de dependentes." << endl;
+	}
 }
 
 void salvarDadosVisitantesEmArquivo(){
@@ -525,7 +780,7 @@ void salvarDadosVisitantesEmArquivo(){
         for (size_t i = 0; i < visitantes.size(); ++i)
         {
             const Visitante &visitante = visitantes[i];
-            arquivo << "codigo:"<<visitante.codigo<< " " <<"cpf:"<< visitante.cpf << " " <<"codigo associado:"<< visitante.codigo_associado << " "<< "nome:"<<visitante.nome << " " <<"data nasc:"<< visitante.data_nasc << " " << "sexo:"<<visitante.sexo << " "<< "visita inicial:"<<visitante.data_visita_inicial << " " <<"visita final:"<< visitante.data_visita_final << "\n";
+            arquivo << "codigo:"<<visitante.codigo<< " " <<"cpf:"<< visitante.cpf << " " <<"codigo associado:"<< visitante.codAssociadoVisitante << " "<< "nome:"<<visitante.nome << " " <<"data nasc:"<< visitante.data_nasc << " " << "sexo:"<<visitante.sexo << " "<< "visita inicial:"<<visitante.data_visita_inicial << " " <<"visita final:"<< visitante.data_visita_final << "\n";
         }
         arquivo.close();
     }
@@ -545,5 +800,4 @@ void carregarDadosDoArquivo(){
     arquivoA.open("dadosAssociados.txt", ios::in | ios::out | ios::app);
     arquivoD.open("dadosDependentes.txt", ios::in | ios::out | ios::app);
     arquivoV.open("dadosVisitante.txt", ios::in | ios::out | ios::app);
-    
-}
+	}
